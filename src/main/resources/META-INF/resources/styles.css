@@ -1,0 +1,492 @@
+body {
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f6fb;
+    color: #1f2937;
+}
+.container {
+    max-width: 960px;
+    margin: 50px auto;
+    padding: 24px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+}
+.page-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 24px;
+}
+.page-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+.header-actions {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+}
+.page-title {
+    font-size: 2rem;
+    margin: 0;
+}
+.page-subtitle {
+    margin: 0;
+    color: #6b7280;
+}
+h2 {
+    margin: 0;
+    font-size: 1.35rem;
+}
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.divider {
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    margin: 24px 0;
+}
+
+.btn {
+    border: none;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btn:active {
+    transform: scale(0.98);
+}
+.btn-primary {
+    background: #2563eb;
+    color: #fff;
+    box-shadow: 0 8px 15px rgba(37, 99, 235, 0.2);
+}
+.btn-secondary {
+    background: #e5e7eb;
+    color: #111827;
+}
+.btn-danger {
+    background: #dc2626;
+    color: #fff;
+}
+.btn-icon {
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: #f3f4f6;
+    border: 1px solid #111827;
+}
+
+.edit,
+.remove,
+.server-item .start-stop,
+.gateway-item .start-stop,
+.toggle {
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: #f3f4f6;
+    border: 1px solid #111827;
+}
+
+.server-item, .gateway-item {
+    display: block;
+    padding: 14px 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #f9fafb;
+}
+
+.dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+}
+.dialog-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    padding: 24px;
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+    width: min(420px, 90vw);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+#addGatewayToolDialog .dialog-content {
+    width: min(720px, 95vw);
+}
+.dialog-content input,
+.dialog-content select {
+    padding: 10px 12px;
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    box-sizing: border-box;
+}
+.dialog-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+.form-grid {
+    display: grid;
+    gap: 10px;
+}
+.form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.field-label {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+.radio-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.radio-label {
+    font-weight: 600;
+}
+.radio-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.inline-radio {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+}
+.button-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.muted {
+    color: #6b7280;
+    margin: 0;
+}
+#certDetails {
+    font-size: 14px; /* Match the font size with the rest of the text */
+    font-weight: normal; /* Ensure it is not bold */
+}
+/* Adjust styles for certificate information fields */
+#certDetails input[type="text"],
+#certDetails textarea {
+    background-color: #d0d0d0 !important; /* Explicitly set darker grey background */
+    border: 1px solid #ccc; /* Subtle border to match other fields */
+    border-radius: 0; /* Remove beveled edges */
+    box-shadow: none; /* Remove any shadow effects */
+    color: #000; /* Ensure text color contrasts well */
+}
+.gateway-header, .server-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.server-details {
+    display: block; /* Ensure it takes its own line */
+    margin-top: 15px; /* Increase spacing from the server-header */
+    padding: 10px 14px; /* Add padding for better readability */
+    background-color: #ffffff; /* Light background for distinction */
+    border: 1px solid #e5e7eb; /* Subtle border for separation */
+    border-radius: 8px; /* Rounded corners for better aesthetics */
+}
+
+
+
+.twistie-name-span {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 10px; /* Add spacing between twistie and name */
+    padding-right: 5px; /* Add padding to the twistie for extra space */
+}
+
+.gateway-name-span, .server-name-span {
+    display: inline-flex;
+    margin-left: 10px; 
+    align-items: center;
+}
+
+.edit-remove-span, .action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+}
+
+
+.server-item .start-stop {
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-left: 10px;
+    font-size: 1.2em;
+}
+
+.certificate-panel input[readonly] {
+    background-color: #f3f4f6;
+    font-size: 0.9em;
+}
+
+.tools-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.status-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    font-weight: 700;
+    background: #e5e7eb;
+    color: #6b7280;
+}
+
+.status-icon.match {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.status-icon.mismatch {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.tool-list {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tool-item {
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+}
+
+.tool-status {
+    margin-right: 8px;
+    font-weight: 700;
+}
+
+.tool-status.match {
+    color: #15803d;
+}
+
+.tool-status.mismatch {
+    color: #b91c1c;
+}
+
+.diff-line {
+    margin-top: 6px;
+    font-size: 0.9em;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.diff-field {
+    font-weight: 600;
+}
+
+.diff-old {
+    text-decoration: line-through;
+    color: #6b7280;
+}
+
+.diff-new {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.gateway-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.gateway-status {
+    color: #2563eb;
+}
+
+.gateway-tools {
+    padding: 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.gateway-meta-panel {
+    margin-bottom: 10px;
+}
+
+.gateway-tools-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.gateway-tools-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.gateway-tool-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.gateway-tool-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.95rem;
+}
+
+.gateway-tool-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #4b5563;
+    font-size: 0.85rem;
+}
+
+.gateway-tool-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.validation-settings {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #f8fafc;
+}
+
+.gateway-tool-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 320px;
+    overflow: auto;
+    padding: 4px;
+}
+
+.gateway-tool-server {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #f8fafc;
+}
+
+.gateway-tool-server-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.gateway-tool-server-body {
+    padding: 8px 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.gateway-tool-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+}
+
+.tool-validation-settings {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    font-size: 0.85rem;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+}
+
+.tool-validation-label {
+    font-weight: 600;
+    color: #4b5563;
+    white-space: nowrap;
+}
+
+.tool-validation-settings select,
+.tool-validation-settings input {
+    min-width: 150px;
+}
+
+.gateway-tool-option label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}

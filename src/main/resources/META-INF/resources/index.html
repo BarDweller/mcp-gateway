@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Server Manager</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main class="container">
+        <header class="page-header">
+            <div class="page-header-top">
+                <div>
+                    <h1 class="page-title">MCP Manager</h1>
+                    <p class="page-subtitle">Manage gateways and servers from one place.</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary btn-icon" title="Admin settings" onclick="openAdminSettingsDialog()">⚙️</button>
+                    <button class="btn btn-secondary btn-icon" title="Logout" onclick="logout()">➜🚪</button>
+                </div>
+            </div>
+        </header>
+
+        <section class="section">
+            <div class="section-header">
+                <h2>MCP Gateway Manager</h2>
+                <button class="btn btn-primary" onclick="openAddGatewayDialog()">Add Gateway</button>
+            </div>
+            <div class="gateway-list list" id="gatewayList">
+                <!-- Gateway items will be added here dynamically -->
+            </div>
+        </section>
+
+        <hr class="divider">
+
+        <section class="section">
+            <div class="section-header">
+                <h2>MCP Server Manager</h2>
+                <button class="btn btn-primary" onclick="openAddDialog()">Add Server</button>
+            </div>
+            <div class="server-list list" id="serverList">
+                <!-- Server items will be added here dynamically -->
+            </div>
+        </section>
+
+        <div id="addEditDialog" class="dialog" aria-hidden="true">
+            <div class="dialog-content">
+                <h2 id="dialogTitle">Add/Edit Server</h2>
+                <input type="text" id="dialogName" placeholder="Name">
+
+                <div class="radio-group">
+                    <label class="radio-label">MCP Server Type:</label>
+                    <label class="radio-option">
+                        <input type="radio" name="serverType" value="local" onchange="toggleTypeFields()" checked> Local
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="serverType" value="remote" onchange="toggleTypeFields()"> Remote
+                    </label>
+                </div>
+
+                <div id="remoteFields" class="form-grid" style="display:none;">
+                    <input type="text" id="dialogHost" placeholder="Host">
+                    <input type="number" id="dialogPort" placeholder="Port">
+                    <input type="text" id="dialogRemotePath" placeholder="/mcp">
+                    <select id="dialogProtocol" onchange="toggleTypeFields()">
+                        <option value="" disabled selected>Select Protocol</option>
+                        <option value="HTTP">HTTP</option>
+                        <option value="HTTPS">HTTPS</option>
+                    </select>
+                    <select id="dialogAuthorizationType" onchange="toggleServerAuthFields()">
+                        <option value="" disabled selected>Select Authorization Type</option>
+                        <option value="None">None</option>
+                        <option value="Basic">Basic</option>
+                        <option value="Bearer">Bearer</option>
+                    </select>
+                    <!-- <input type="text" id="dialogClientCert" placeholder="Client Certificate"> -->
+                </div>
+
+                <div id="remoteAuthFields" class="form-grid" style="display:none;">
+                    <input type="text" id="dialogAuthUsername" placeholder="Basic auth username">
+                    <input type="password" id="dialogAuthPassword" placeholder="Basic auth password">
+                    <input type="text" id="dialogAuthToken" placeholder="Bearer token">
+                </div>
+
+                <div id="remoteHeaderFields" class="form-row" style="display:none;">
+                    <label class="radio-label">Additional HTTP headers</label>
+                    <div id="serverHeadersList" class="gateway-tool-picker"></div>
+                    <div class="button-row">
+                        <button class="btn btn-secondary" onclick="addServerHeaderRow()">Add header</button>
+                    </div>
+                </div>
+
+                <div id="remoteOauthFields" class="form-row" style="display:none;">
+                    <label class="radio-label">OAuth2 (coming soon)</label>
+                    <p class="muted">OAuth authorization flow will be supported here in a future release.</p>
+                    <button class="btn btn-secondary" disabled>Connect OAuth2</button>
+                </div>
+
+                <div id="localFields" class="form-grid" style="display:none;">
+                    <input type="text" id="dialogPath" placeholder="Path">
+                    <input type="text" id="dialogArgument" placeholder="Argument">
+                </div>
+
+                <div id="pinCertOption" class="form-row" style="display: none;">
+                    <label class="radio-label" for="pinCert">Pin Certificate:</label>
+                    <span class="inline-radio">
+                        <label class="radio-option">
+                            <input type="radio" name="pinCert" value="no" onchange="toggleCertificateFields()"> No
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="pinCert" value="yes" onchange="toggleCertificateFields()"> Yes
+                        </label>
+                    </span>
+                </div>
+
+                <div id="pinCertFields" class="form-row" style="display: none;">
+                    <div id="retrieveTestCertButtons" class="button-row">
+                        <button class="btn btn-secondary" onclick="retrieveCertificate()">Retrieve Certificate</button>
+                        <button class="btn btn-secondary" onclick="testCertificate()">Test Certificate</button>
+                    </div>
+                </div>
+
+                <div id="certDetails" class="certificate-panel" style="display: none;">
+                    <label>Common Name (CN):</label>
+                    <input type="text" id="dialogCertCN" readonly>
+                    <label>Active From:</label>
+                    <input type="text" id="dialogCertNotBefore" readonly>
+                    <label>Expires On:</label>
+                    <input type="text" id="dialogCertNotAfter" readonly>
+                    <label>PEM Certificate:</label>
+                    <input type="text" id="dialogServerCertificate" readonly>
+                </div>
+
+                <div class="dialog-buttons">
+                    <button class="btn btn-primary" onclick="confirmDialog()">OK</button>
+                    <button class="btn btn-secondary" onclick="closeDialog()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="addEditGatewayDialog" class="dialog" aria-hidden="true">
+            <div class="dialog-content">
+                <h2 id="gatewayDialogTitle">Add/Edit Gateway</h2>
+                <input type="text" id="gatewayDialogName" placeholder="Name">
+                <input type="text" id="gatewayDialogHost" placeholder="Host">
+                <input type="number" id="gatewayDialogPort" placeholder="Port">
+                <div class="gateway-tools">
+                    <div class="gateway-tools-header">
+                        <span>Configured tools</span>
+                        <button class="btn btn-secondary" onclick="openAddGatewayToolDialogFromDialog()">Add tool</button>
+                    </div>
+                    <div id="gatewayDialogTools" class="gateway-tools-list"></div>
+                </div>
+                <label for="gatewayDialogAuthType" class="field-label">Authentication</label>
+                <select id="gatewayDialogAuthType" onchange="toggleGatewayAuthFields()">
+                    <option value="NONE">None</option>
+                    <option value="BASIC">Basic</option>
+                    <option value="BEARER">Bearer</option>
+                </select>
+                <div id="gatewayAuthBasicFields" class="form-grid" style="display: none;">
+                    <input type="text" id="gatewayDialogAuthUsername" placeholder="Username">
+                    <input type="password" id="gatewayDialogAuthPassword" placeholder="Password">
+                </div>
+                <div id="gatewayAuthBearerFields" class="form-grid" style="display: none;">
+                    <input type="text" id="gatewayDialogAuthToken" placeholder="Bearer token">
+                </div>
+                <div class="dialog-buttons">
+                    <button class="btn btn-primary" onclick="confirmGatewayDialog()">OK</button>
+                    <button class="btn btn-secondary" onclick="closeGatewayDialog()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="confirmationDialog" class="dialog" aria-hidden="true">
+            <div class="dialog-content">
+                <h2 id="confirmDialogTitle">Are you sure?</h2>
+                <p id="confirmDialogMessage" class="muted">This action cannot be undone.</p>
+                <div class="dialog-buttons">
+                    <button id="confirmDialogOk" class="btn btn-danger" onclick="confirmDialogOk()">OK</button>
+                    <button class="btn btn-secondary" onclick="confirmDialogCancel()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="messageDialog" class="dialog" aria-hidden="true">
+            <div class="dialog-content">
+                <h2 id="messageDialogTitle">Notice</h2>
+                <p id="messageDialogMessage" class="muted"></p>
+                <div class="dialog-buttons">
+                    <button class="btn btn-primary" onclick="closeMessageDialog()">OK</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="addGatewayToolDialog" class="dialog" aria-hidden="true">
+            <div class="dialog-content">
+                <h2>Add tool to gateway</h2>
+                <div id="gatewayToolList" class="gateway-tool-picker"></div>
+                <div class="dialog-buttons">
+                    <button class="btn btn-primary" onclick="confirmGatewayToolDialog()">Add selected</button>
+                    <button class="btn btn-secondary" onclick="closeGatewayToolDialog()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="gatewayToolSettingsDialog" class="dialog" aria-hidden="true">
+            <div class="dialog-content">
+                <h2>Edit tool validation</h2>
+                <p id="gatewayToolSettingsTitle" class="muted"></p>
+                <label for="gatewayToolSettingsMode" class="field-label">Fingerprint validation</label>
+                <select id="gatewayToolSettingsMode" onchange="updateGatewayToolValidationControls('gatewayToolSettingsMode','gatewayToolSettingsPeriod','gatewayToolSettingsCustomSeconds','gatewayToolSettingsPeriodRow')">
+                    <option value="PER_INVOCATION">Per invocation</option>
+                    <option value="PER_TIME_PERIOD">Per time period</option>
+                </select>
+                <div id="gatewayToolSettingsPeriodRow" class="form-row" style="display: none;">
+                    <label for="gatewayToolSettingsPeriod" class="field-label">Validation period</label>
+                    <select id="gatewayToolSettingsPeriod" onchange="updateGatewayToolValidationControls('gatewayToolSettingsMode','gatewayToolSettingsPeriod','gatewayToolSettingsCustomSeconds','gatewayToolSettingsPeriodRow')">
+                        <option value="30">30 seconds</option>
+                        <option value="300">5 minutes</option>
+                        <option value="1800">30 minutes</option>
+                        <option value="7200">2 hours</option>
+                        <option value="43200">12 hours</option>
+                        <option value="86400">24 hours</option>
+                        <option value="custom">Custom (seconds)</option>
+                    </select>
+                    <input type="number" id="gatewayToolSettingsCustomSeconds" placeholder="Enter seconds" style="display: none;">
+                </div>
+                <div class="dialog-buttons">
+                    <button class="btn btn-primary" onclick="confirmGatewayToolSettingsDialog()">Save</button>
+                    <button class="btn btn-secondary" onclick="closeGatewayToolSettingsDialog()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loginDialog" class="dialog" aria-hidden="true">
+            <div class="dialog-content">
+                <h2>Sign in</h2>
+                <p class="muted">Enter your admin credentials to access the console.</p>
+                <input type="text" id="loginUsername" placeholder="Username">
+                <input type="password" id="loginPassword" placeholder="Password">
+                <div class="dialog-buttons">
+                    <button class="btn btn-primary" onclick="confirmLogin()">Sign in</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="adminSettingsDialog" class="dialog" aria-hidden="true">
+            <div class="dialog-content">
+                <h2>Admin credentials</h2>
+                <p class="muted">Update the credentials used to access this console.</p>
+                <input type="text" id="adminSettingsUsername" placeholder="Username">
+                <input type="password" id="adminSettingsPassword" placeholder="New password">
+                <div class="dialog-buttons">
+                    <button class="btn btn-primary" onclick="confirmAdminSettings()">Save</button>
+                    <button class="btn btn-secondary" onclick="closeAdminSettingsDialog()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Include jsrsasign library -->
+    <script src="https://cdn.jsdelivr.net/npm/jsrsasign@latest/lib/jsrsasign-all-min.js"></script>
+    <script src="scripts.js"></script>
+
+</body>
+</html>
