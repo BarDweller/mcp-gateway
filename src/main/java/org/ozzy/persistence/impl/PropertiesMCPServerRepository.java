@@ -45,13 +45,19 @@ public class PropertiesMCPServerRepository extends PropertiesRepositoryBase impl
             if (portValue != null && !portValue.isBlank()) {
                 server.setPort(Integer.parseInt(portValue));
             }
+            server.setAuthorizationType(properties.getProperty(buildServerKey(id, FIELD_AUTHORIZATION_TYPE)));
             server.setType(properties.getProperty(buildServerKey(id, FIELD_TYPE)));
+            server.setPath(properties.getProperty(buildServerKey(id, FIELD_PATH)));
             server.setRemotePath(properties.getProperty(buildServerKey(id, FIELD_REMOTE_PATH)));
             server.setProtocol(properties.getProperty(buildServerKey(id, FIELD_PROTOCOL)));
+            server.setArgument(properties.getProperty(buildServerKey(id, FIELD_ARGUMENT)));
+            server.setClientCert(properties.getProperty(buildServerKey(id, FIELD_CLIENT_CERT)));
+            server.setCertificate(decodeSecret(properties.getProperty(buildServerKey(id, FIELD_CERTIFICATE))));
             server.setAuthUsername(properties.getProperty(buildServerKey(id, FIELD_AUTH_USERNAME)));
             server.setAuthPassword(decodeSecret(properties.getProperty(buildServerKey(id, FIELD_AUTH_PASSWORD))));
             server.setAuthToken(decodeSecret(properties.getProperty(buildServerKey(id, FIELD_AUTH_TOKEN))));
             server.setHeaders(readHeaders(properties.getProperty(buildServerKey(id, FIELD_HEADERS))));
+            server.setOauthClientId(properties.getProperty(buildServerKey(id, FIELD_OAUTH_CLIENT_ID)));
             server.setOauthAccessToken(decodeSecret(properties.getProperty(buildServerKey(id, FIELD_OAUTH_ACCESS_TOKEN))));
             server.setOauthRefreshToken(decodeSecret(properties.getProperty(buildServerKey(id, FIELD_OAUTH_REFRESH_TOKEN))));
             server.setTools(readTools(properties.getProperty(buildServerKey(id, FIELD_TOOLS))));
@@ -75,13 +81,19 @@ public class PropertiesMCPServerRepository extends PropertiesRepositoryBase impl
             properties.setProperty(buildServerKey(id, FIELD_NAME), server.getName());
             properties.setProperty(buildServerKey(id, FIELD_HOST), server.getHost());
             properties.setProperty(buildServerKey(id, FIELD_PORT), String.valueOf(server.getPort()));
+            setOptional(properties, buildServerKey(id, FIELD_AUTHORIZATION_TYPE), server.getAuthorizationType());
             properties.setProperty(buildServerKey(id, FIELD_TYPE), server.getType());
+            setOptional(properties, buildServerKey(id, FIELD_PATH), server.getPath());
             properties.setProperty(buildServerKey(id, FIELD_REMOTE_PATH), server.getRemotePath());
             properties.setProperty(buildServerKey(id, FIELD_PROTOCOL), server.getProtocol());
+            setOptional(properties, buildServerKey(id, FIELD_ARGUMENT), server.getArgument());
+            setOptional(properties, buildServerKey(id, FIELD_CLIENT_CERT), server.getClientCert());
+            setOptional(properties, buildServerKey(id, FIELD_CERTIFICATE), encodeSecret(server.getCertificate()));
             setOptional(properties, buildServerKey(id, FIELD_AUTH_USERNAME), server.getAuthUsername());
             setOptional(properties, buildServerKey(id, FIELD_AUTH_PASSWORD), encodeSecret(server.getAuthPassword()));
             setOptional(properties, buildServerKey(id, FIELD_AUTH_TOKEN), encodeSecret(server.getAuthToken()));
             setOptional(properties, buildServerKey(id, FIELD_HEADERS), writeHeaders(server.getHeaders()));
+            setOptional(properties, buildServerKey(id, FIELD_OAUTH_CLIENT_ID), server.getOauthClientId());
             setOptional(properties, buildServerKey(id, FIELD_OAUTH_ACCESS_TOKEN), encodeSecret(server.getOauthAccessToken()));
             setOptional(properties, buildServerKey(id, FIELD_OAUTH_REFRESH_TOKEN), encodeSecret(server.getOauthRefreshToken()));
             properties.setProperty(buildServerKey(id, FIELD_TOOLS), writeTools(server.getTools()));

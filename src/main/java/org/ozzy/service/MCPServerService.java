@@ -19,6 +19,7 @@ import org.ozzy.model.MCPServer;
 import org.ozzy.model.InputSchema;
 import org.ozzy.model.Tool;
 import org.ozzy.persistence.MCPServerRepository;
+import org.ozzy.util.CertificatePinningUtil;
 import org.ozzy.util.ToolUtil;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -246,6 +247,10 @@ public class MCPServerService {
     }
 
     private List<Tool> fetchRemoteTools(MCPServer server) {
+        if (!CertificatePinningUtil.validatePinnedCertificate(server)) {
+            LOG.warnf("Pinned certificate validation failed for server %s", server == null ? "unknown" : server.getId());
+            return null;
+        }
         if (server.getProtocol() == null) {
             return Collections.emptyList();
         }
@@ -278,6 +283,11 @@ public class MCPServerService {
             }
         } else if (authType != null && authType.equalsIgnoreCase("BEARER")) {
             String token = server.getAuthToken();
+            if (token != null && !token.isBlank()) {
+                headers.put("Authorization", "Bearer " + token);
+            }
+        } else if (authType != null && authType.equalsIgnoreCase("OAUTH")) {
+            String token = server.getOauthAccessToken();
             if (token != null && !token.isBlank()) {
                 headers.put("Authorization", "Bearer " + token);
             }

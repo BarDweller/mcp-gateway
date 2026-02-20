@@ -83,6 +83,7 @@ public final class DtoMapper {
         dto.setArgument(server.getArgument());
         dto.setCertificate(server.getCertificate());
         dto.setHeaders(server.getHeaders());
+        dto.setOauthClientId(server.getOauthClientId());
         dto.setOauthAccessToken(server.getOauthAccessToken());
         dto.setOauthRefreshToken(server.getOauthRefreshToken());
         dto.setTools(toToolDtos(server.getTools()));

@@ -481,12 +481,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const status = serverToolStatus.get(serverId) || (hasStoredTools ? 'unknown' : 'none');
             const statusIcon = getStatusIcon(status);
             const buttonLabel = hasStoredTools ? 'Compare tool information to stored' : 'Read initial tool information';
+            const pinBadge = server?.certificate ? '<span class="pin-badge" title="Certificate pinned">🔒 pinned</span>' : '';
 
             serverItem.innerHTML = `
                 <div class="server-header">
                     <span class="twistie-name-span">
                         <span id="server-twistie-${index}" onclick="toggleTools(${index})" style="cursor: pointer;">▶</span>
                         <span class="server-name-span" title="${escapeHtml(serverId)}">${server.name || 'Unnamed Server'}</span>
+                        ${pinBadge}
                     </span>
                     <span class="action-buttons">
                         <button class="btn btn-secondary btn-icon" title="Clone to gateway" onclick="openCloneGatewayDialog(${index})">🧬</button>
@@ -751,7 +753,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pinCertOption.style.display = 'block';
             remoteAuthFields.style.display = 'grid';
             remoteHeaderFields.style.display = 'block';
-            remoteOauthFields.style.display = 'block';
+            remoteOauthFields.style.display = 'none';
         } else {
             remoteFields.style.display = 'none';
             localFields.style.display = 'block';
@@ -763,6 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         toggleCertificateFields();
         toggleServerAuthFields();
+        updateOAuthConnectState();
     }
 
     function toggleServerAuthFields() {
@@ -770,6 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const username = document.getElementById('dialogAuthUsername');
         const password = document.getElementById('dialogAuthPassword');
         const token = document.getElementById('dialogAuthToken');
+        const oauthFields = document.getElementById('remoteOauthFields');
         if (!username || !password || !token) {
             return;
         }
@@ -777,15 +781,32 @@ document.addEventListener('DOMContentLoaded', () => {
             username.style.display = 'block';
             password.style.display = 'block';
             token.style.display = 'none';
+            if (oauthFields) {
+                oauthFields.style.display = 'none';
+            }
         } else if (authType === 'Bearer') {
             username.style.display = 'none';
             password.style.display = 'none';
             token.style.display = 'block';
+            if (oauthFields) {
+                oauthFields.style.display = 'none';
+            }
+        } else if (authType === 'OAuth') {
+            username.style.display = 'none';
+            password.style.display = 'none';
+            token.style.display = 'none';
+            if (oauthFields) {
+                oauthFields.style.display = 'block';
+            }
         } else {
             username.style.display = 'none';
             password.style.display = 'none';
             token.style.display = 'none';
+            if (oauthFields) {
+                oauthFields.style.display = 'none';
+            }
         }
+        updateOAuthConnectState();
     }
 
     function renderServerHeaders(headers) {
@@ -973,10 +994,61 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function updateOAuthConnectState() {
+        const button = document.getElementById('oauthConnectButton');
+        if (!button) {
+            return;
+        }
+        const authType = document.getElementById('dialogAuthorizationType').value;
+        const serverTypeRemote = document.querySelector('input[name="serverType"][value="remote"]');
+        const host = document.getElementById('dialogHost').value.trim();
+        const port = document.getElementById('dialogPort').value.trim();
+        const protocol = document.getElementById('dialogProtocol').value;
+        const remotePath = document.getElementById('dialogRemotePath').value.trim();
+        const ready = authType === 'OAuth'
+            && serverTypeRemote?.checked
+            && host
+            && port
+            && protocol
+            && remotePath;
+        button.disabled = !ready;
+    }
+
     document.getElementById('dialogHost').addEventListener('input', toggleRetrieveButton);
     document.getElementById('dialogHost').addEventListener('input', syncNameFromHost);
     document.getElementById('dialogHost').addEventListener('blur', applyHostUrlParsing);
     document.getElementById('dialogPort').addEventListener('input', toggleRetrieveButton);
+    document.getElementById('dialogHost').addEventListener('input', updateOAuthConnectState);
+    document.getElementById('dialogPort').addEventListener('input', updateOAuthConnectState);
+    document.getElementById('dialogRemotePath').addEventListener('input', updateOAuthConnectState);
+    document.getElementById('dialogProtocol').addEventListener('change', updateOAuthConnectState);
+
+    function connectOAuth() {
+        if (currentEditIndex === null) {
+            showMessageDialog('Save required', 'Save the server before connecting OAuth.');
+            return;
+        }
+        const server = serversData[currentEditIndex];
+        const serverId = resolveServerId(server, currentEditIndex);
+        if (!serverId) {
+            showMessageDialog('Missing server id', 'Server id is missing. Please refresh the page.');
+            return;
+        }
+        const authType = document.getElementById('dialogAuthorizationType').value;
+        if (authType !== 'OAuth') {
+            showMessageDialog('OAuth not selected', 'Select OAuth as the authorization type first.');
+            return;
+        }
+        if (!server?.host || !server?.port || !server?.protocol || !server?.remotePath) {
+            showMessageDialog('Missing server details', 'Host, port, protocol, and path are required before connecting OAuth.');
+            return;
+        }
+
+        const popup = window.open(`/oauth/connect/${serverId}`, 'mcp-oauth', 'width=520,height=720');
+        if (!popup) {
+            showMessageDialog('Popup blocked', 'Please allow popups to complete OAuth sign-in.');
+        }
+    }
 
     async function removeServer(index) {
         const server = serversData[index];
@@ -1079,6 +1151,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const existing = currentEditIndex === null ? null : serversData[currentEditIndex];
+
         const server = {
             name,
             type,
@@ -1090,6 +1164,9 @@ document.addEventListener('DOMContentLoaded', () => {
             authToken: authorizationType === 'Bearer' ? authToken : null,
             headers,
             certificate,
+            oauthClientId: existing?.oauthClientId || null,
+            oauthAccessToken: existing?.oauthAccessToken || null,
+            oauthRefreshToken: existing?.oauthRefreshToken || null,
             path,
             protocol,
             remotePath,
@@ -1311,6 +1388,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const toolName = toolRef?.toolName || 'Unknown tool';
             const serverTitle = serverId || '';
             const validationSummary = getValidationSummary(toolRef);
+            const pinStatus = server?.certificate ? 'Cert pinned' : 'Cert not pinned';
             const tool = server?.tools?.find(item => item?.name === toolName);
             const validation = getToolValidationInfo(tool);
             return `
@@ -1322,7 +1400,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="gateway-tool-separator">::</span>
                             <span>${toolName}</span>
                         </div>
-                        <span class="gateway-tool-meta">Validation: ${validationSummary}</span>
+                        <span class="gateway-tool-meta">Validation: ${validationSummary} • ${pinStatus}</span>
                     </div>
                     <div class="gateway-tool-actions">
                         <button class="btn btn-secondary btn-icon" onclick="openGatewayToolSettingsDialog(${index}, ${toolIndex})">⚙️</button>
@@ -1398,6 +1476,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const serverName = escapeHtml(server?.name || 'Unknown server');
             const toolName = escapeHtml(toolRef.toolName || 'Unknown tool');
             const validationSummary = getValidationSummary(toolRef);
+            const pinStatus = server?.certificate ? 'Cert pinned' : 'Cert not pinned';
             return `
                 <div class="gateway-tool-item">
                     <div class="gateway-tool-details">
@@ -1406,7 +1485,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="gateway-tool-separator">::</span>
                             <span>${toolName}</span>
                         </div>
-                        <span class="gateway-tool-meta">Validation: ${validationSummary}</span>
+                        <span class="gateway-tool-meta">Validation: ${validationSummary} • ${pinStatus}</span>
                     </div>
                     <div class="gateway-tool-actions">
                         <button class="btn btn-secondary btn-icon" onclick="removeGatewayDialogTool(${index})">✖</button>
@@ -1874,6 +1953,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.openAdminSettingsDialog = openAdminSettingsDialog;
     window.closeAdminSettingsDialog = closeAdminSettingsDialog;
     window.confirmAdminSettings = confirmAdminSettings;
+    window.connectOAuth = connectOAuth;
 
     toggleTypeFields();
     if (authHeader) {
@@ -1887,4 +1967,21 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         showLoginDialog();
     }
+
+    window.addEventListener('message', (event) => {
+        if (event.origin !== window.location.origin) {
+            return;
+        }
+        const payload = event.data || {};
+        if (payload.type !== 'oauth-complete') {
+            return;
+        }
+        if (payload.success) {
+            showMessageDialog('OAuth connected', 'OAuth tokens saved for this server.');
+            fetchServers();
+        } else {
+            const message = payload.error ? String(payload.error) : 'OAuth connection failed.';
+            showMessageDialog('OAuth failed', message);
+        }
+    });
 });

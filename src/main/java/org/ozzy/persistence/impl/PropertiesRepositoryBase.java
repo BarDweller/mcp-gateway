@@ -23,12 +23,18 @@ abstract class PropertiesRepositoryBase {
     protected static final String FIELD_AUTH_USERNAME = "authUsername";
     protected static final String FIELD_AUTH_PASSWORD = "authPassword";
     protected static final String FIELD_AUTH_TOKEN = "authToken";
+    protected static final String FIELD_AUTHORIZATION_TYPE = "authorizationType";
     protected static final String FIELD_TYPE = "type";
+    protected static final String FIELD_PATH = "path";
     protected static final String FIELD_REMOTE_PATH = "remotePath";
     protected static final String FIELD_PROTOCOL = "protocol";
+    protected static final String FIELD_ARGUMENT = "argument";
+    protected static final String FIELD_CLIENT_CERT = "clientCert";
+    protected static final String FIELD_CERTIFICATE = "certificate";
     protected static final String FIELD_HEADERS = "headers";
     protected static final String FIELD_OAUTH_ACCESS_TOKEN = "oauthAccessToken";
     protected static final String FIELD_OAUTH_REFRESH_TOKEN = "oauthRefreshToken";
+    protected static final String FIELD_OAUTH_CLIENT_ID = "oauthClientId";
 
     protected static final String APP_AUTH_TYPE_KEY = "app.auth.type";
     protected static final String APP_AUTH_USERNAME_KEY = "app.auth.username";

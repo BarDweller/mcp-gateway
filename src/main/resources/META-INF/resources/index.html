@@ -72,6 +72,7 @@
                         <option value="None">None</option>
                         <option value="Basic">Basic</option>
                         <option value="Bearer">Bearer</option>
+                        <option value="OAuth">OAuth</option>
                     </select>
                     <!-- <input type="text" id="dialogClientCert" placeholder="Client Certificate"> -->
                 </div>
@@ -91,9 +92,8 @@
                 </div>
 
                 <div id="remoteOauthFields" class="form-row" style="display:none;">
-                    <label class="radio-label">OAuth2 (coming soon)</label>
-                    <p class="muted">OAuth authorization flow will be supported here in a future release.</p>
-                    <button class="btn btn-secondary" disabled>Connect OAuth2</button>
+                    <label class="radio-label">OAuth2</label>
+                    <button id="oauthConnectButton" class="btn btn-secondary" onclick="connectOAuth()" disabled>Connect OAuth2</button>
                 </div>
 
                 <div id="localFields" class="form-grid" style="display:none;">

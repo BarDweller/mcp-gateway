@@ -3,6 +3,10 @@ package org.ozzy.model;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 public class InputSchema {
 
     private String type;
@@ -52,10 +56,13 @@ public class InputSchema {
                '}';
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Property {
 
         private String type;
         private String description;
+        @JsonProperty("enum")
+        private java.util.List<String> enumValues;
 
         public String getType() {
             return type;
@@ -71,6 +78,14 @@ public class InputSchema {
 
         public void setDescription(String description) {
             this.description = description;
+        }
+
+        public java.util.List<String> getEnumValues() {
+            return enumValues;
+        }
+
+        public void setEnumValues(java.util.List<String> enumValues) {
+            this.enumValues = enumValues;
         }
 
         @Override

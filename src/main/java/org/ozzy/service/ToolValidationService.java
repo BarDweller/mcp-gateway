@@ -12,6 +12,7 @@ import org.jboss.logging.Logger;
 import org.ozzy.model.GatewayToolRef;
 import org.ozzy.model.MCPServer;
 import org.ozzy.model.Tool;
+import org.ozzy.util.CertificatePinningUtil;
 import org.ozzy.util.ToolFingerprintUtil;
 import org.ozzy.util.ToolUtil;
 
@@ -32,6 +33,14 @@ public class ToolValidationService {
     MeterRegistry meterRegistry;
 
     public boolean validateToolFingerprint(String gatewayId, GatewayToolRef ref, MCPServer server, String toolName) {
+        if (!validatePinnedCertificate(server)) {
+            meterRegistry.counter("mcp.tool.validation.count",
+                    "gatewayId", gatewayId,
+                    "serverId", String.valueOf(ref.getServerId()),
+                    "tool", toolName,
+                    "result", Boolean.toString(false)).increment();
+            return false;
+        }
         ValidationPolicy policy = resolveValidationPolicy(ref);
         String key = buildValidationKey(gatewayId, ref);
         ValidationState state = validationStates.get(key);
@@ -133,6 +142,10 @@ public class ToolValidationService {
         return toolUtil.getTools(url, buildServerHeaders(server));
     }
 
+    protected boolean validatePinnedCertificate(MCPServer server) {
+        return CertificatePinningUtil.validatePinnedCertificate(server);
+    }
+
     private java.util.Map<String, String> buildServerHeaders(MCPServer server) {
         java.util.Map<String, String> headers = new java.util.HashMap<>();
         if (server == null) {
@@ -149,6 +162,11 @@ public class ToolValidationService {
             }
         } else if (authType != null && authType.equalsIgnoreCase("BEARER")) {
             String token = server.getAuthToken();
+            if (token != null && !token.isBlank()) {
+                headers.put("Authorization", "Bearer " + token);
+            }
+        } else if (authType != null && authType.equalsIgnoreCase("OAUTH")) {
+            String token = server.getOauthAccessToken();
             if (token != null && !token.isBlank()) {
                 headers.put("Authorization", "Bearer " + token);
             }

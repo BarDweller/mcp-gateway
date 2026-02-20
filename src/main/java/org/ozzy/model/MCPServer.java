@@ -28,6 +28,7 @@ public class MCPServer {
     private String certificate; // Stores the actual certificate in PEM format
     private List<Tool> tools;
     private java.util.Map<String, String> headers;
+    private String oauthClientId;
     private String oauthAccessToken;
     private String oauthRefreshToken;
 
@@ -165,6 +166,15 @@ public class MCPServer {
     public void setHeaders(java.util.Map<String, String> headers) {
         this.headers = headers;
     }
+
+    public String getOauthClientId() {
+        return oauthClientId;
+    }
+
+    public void setOauthClientId(String oauthClientId) {
+        this.oauthClientId = oauthClientId;
+    }
+
 
     public String getOauthAccessToken() {
         return oauthAccessToken;

@@ -351,6 +351,11 @@ public class MCPServerProxy {
             if (token != null && !token.isBlank()) {
                 backendRequest.putHeader("Authorization", "Bearer " + token);
             }
+        } else if (authType != null && authType.equalsIgnoreCase("OAUTH")) {
+            String token = server.getOauthAccessToken();
+            if (token != null && !token.isBlank()) {
+                backendRequest.putHeader("Authorization", "Bearer " + token);
+            }
         }
 
         if (server.getHeaders() != null) {

@@ -42,6 +42,8 @@ import org.jboss.logging.Logger;
 
 public class ToolUtil {
     private static final Logger LOG = Logger.getLogger(ToolUtil.class);
+    private static final String PROTOCOL_VERSION = "2025-11-25";
+    private static final java.util.concurrent.ConcurrentHashMap<String, String> SESSION_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
 
     private String getType(JsonSchemaElement element) {
         if (element instanceof JsonAnyOfSchema) {
@@ -176,28 +178,38 @@ public class ToolUtil {
             payload.put("method", "tools/list");
             payload.set("params", mapper.createObjectNode());
 
-            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .timeout(Duration.ofSeconds(15))
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(payload.toString()));
+            LOG.debugf("Tool list request -> %s", url);
+            LOG.debugf("Tool list request headers: Content-Type=application/json, Accept=application/json, text/event-stream");
+            LOG.debugf("Tool list request header MCP-Protocol-Version: %s", PROTOCOL_VERSION);
+            LOG.debugf("Tool list request payload: %s", payload.toString());
 
-            if (headers != null) {
-                headers.forEach((key, value) -> {
-                    if (key != null && value != null) {
-                        requestBuilder.header(key, value);
-                    }
-                });
+            String sessionKey = buildSessionKey(url, headers);
+            String sessionId = SESSION_CACHE.get(sessionKey);
+            HttpResponse<String> response = sendJsonRpc(url, headers, sessionId, payload);
+
+            if (response.statusCode() == 400 && requiresSession(response.body())) {
+                LOG.debug("Tool list requires MCP session; initializing.");
+                String newSessionId = initializeSession(url, headers);
+                if (newSessionId != null && !newSessionId.isBlank()) {
+                    SESSION_CACHE.put(sessionKey, newSessionId);
+                    response = sendJsonRpc(url, headers, newSessionId, payload);
+                }
             }
 
-            HttpClient client = HttpClient.newHttpClient();
-            HttpResponse<String> response = client.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString());
+            LOG.debugf("Tool list response status: %d", response.statusCode());
+            response.headers().map().forEach((key, values) ->
+                    LOG.debugf("Tool list response header %s: %s", key, values));
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                LOG.warnf("Tool list response body: %s", response.body());
                 LOG.warnf("Tool list request failed: %s", response.statusCode());
                 return null;
             }
 
-            JsonNode root = mapper.readTree(response.body());
+            JsonNode root = parseResponseBody(mapper, response);
+            if (root == null) {
+                LOG.warn("Tool list response could not be parsed.");
+                return null;
+            }
             JsonNode toolsNode = root.path("result").path("tools");
             if (!toolsNode.isArray()) {
                 return null;
@@ -221,5 +233,139 @@ public class ToolUtil {
             LOG.error("Error fetching tool list with headers", e);
             return null;
         }
+    }
+
+    private JsonNode parseResponseBody(ObjectMapper mapper, HttpResponse<String> response) throws Exception {
+        String contentType = response.headers().firstValue("content-type").orElse("");
+        String body = response.body();
+        if (contentType.toLowerCase().contains("text/event-stream")) {
+            String json = extractFirstEventData(body);
+            if (json == null || json.isBlank()) {
+                return null;
+            }
+            return mapper.readTree(json);
+        }
+        return mapper.readTree(body);
+    }
+
+    private String extractFirstEventData(String body) {
+        if (body == null || body.isBlank()) {
+            return null;
+        }
+        StringBuilder data = new StringBuilder();
+        String[] lines = body.split("\\r?\\n");
+        for (String line : lines) {
+            if (line.startsWith("data:")) {
+                data.append(line.substring(5).trim());
+            } else if (line.isBlank() && data.length() > 0) {
+                break;
+            }
+        }
+        return data.toString();
+    }
+
+    private HttpResponse<String> sendJsonRpc(String url, Map<String, String> headers, String sessionId, ObjectNode payload)
+            throws Exception {
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofSeconds(15))
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json, text/event-stream")
+                .header("MCP-Protocol-Version", PROTOCOL_VERSION)
+                .POST(HttpRequest.BodyPublishers.ofString(payload.toString()));
+
+        if (sessionId != null && !sessionId.isBlank()) {
+            requestBuilder.header("Mcp-Session-Id", sessionId);
+            LOG.debugf("Tool list request header Mcp-Session-Id: %s", sessionId);
+        }
+
+        if (headers != null) {
+            headers.forEach((key, value) -> {
+                if (key != null && value != null) {
+                    requestBuilder.header(key, value);
+                    LOG.debugf("Tool list request header %s: %s", key, maskHeaderValue(key, value));
+                }
+            });
+        }
+
+        HttpClient client = HttpClient.newHttpClient();
+        return client.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    private boolean requiresSession(String body) {
+        if (body == null) {
+            return false;
+        }
+        return body.contains("Mcp-Session-Id") && body.toLowerCase().contains("required");
+    }
+
+    private String initializeSession(String url, Map<String, String> headers) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode payload = mapper.createObjectNode();
+            payload.put("jsonrpc", "2.0");
+            payload.put("id", 1);
+            payload.put("method", "initialize");
+
+            ObjectNode params = mapper.createObjectNode();
+            params.put("protocolVersion", PROTOCOL_VERSION);
+            ObjectNode capabilities = mapper.createObjectNode();
+            ObjectNode tools = mapper.createObjectNode();
+            tools.put("listChanged", false);
+            capabilities.set("tools", tools);
+            params.set("capabilities", capabilities);
+
+            ObjectNode clientInfo = mapper.createObjectNode();
+            clientInfo.put("name", "MCPGateway");
+            clientInfo.put("version", "1.0.0");
+            params.set("clientInfo", clientInfo);
+            payload.set("params", params);
+
+            LOG.debugf("Initialize request payload: %s", payload.toString());
+            HttpResponse<String> response = sendJsonRpc(url, headers, null, payload);
+            LOG.debugf("Initialize response status: %d", response.statusCode());
+            response.headers().map().forEach((key, values) ->
+                    LOG.debugf("Initialize response header %s: %s", key, values));
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                LOG.warnf("Initialize response body: %s", response.body());
+                return null;
+            }
+            return response.headers().firstValue("Mcp-Session-Id").orElse(null);
+        } catch (Exception e) {
+            LOG.warn("Initialize request failed", e);
+            return null;
+        }
+    }
+
+    private String buildSessionKey(String url, Map<String, String> headers) {
+        String auth = "";
+        if (headers != null) {
+            String headerValue = headers.get("Authorization");
+            if (headerValue == null) {
+                headerValue = headers.get("authorization");
+            }
+            if (headerValue != null) {
+                auth = headerValue;
+            }
+        }
+        return url + "|" + auth;
+    }
+
+    private String maskHeaderValue(String key, String value) {
+        if (key == null || value == null) {
+            return value;
+        }
+        if (!"authorization".equalsIgnoreCase(key)) {
+            return value;
+        }
+        String trimmed = value.trim();
+        int lastSpace = trimmed.indexOf(' ');
+        String scheme = lastSpace > 0 ? trimmed.substring(0, lastSpace) : "";
+        String token = lastSpace > 0 ? trimmed.substring(lastSpace + 1) : trimmed;
+        if (token.length() <= 6) {
+            return scheme + " ****";
+        }
+        String masked = token.substring(0, 2) + "***" + token.substring(token.length() - 4);
+        return scheme.isBlank() ? masked : scheme + " " + masked;
     }
 }

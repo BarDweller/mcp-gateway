@@ -39,6 +39,9 @@ class PropertiesMCPServerRepositoryTest {
         server.setType("remote");
         server.setProtocol("HTTP");
         server.setRemotePath("/mcp");
+        server.setAuthorizationType("None");
+        server.setCertificate("-----BEGIN CERTIFICATE-----\nTEST\n-----END CERTIFICATE-----");
+        server.setOauthClientId("client-123");
 
         repository.saveAll(List.of(server));
 
@@ -46,5 +49,8 @@ class PropertiesMCPServerRepositoryTest {
         assertThat(loaded, hasSize(1));
         assertThat(loaded.get(0).getName(), equalTo("Server One"));
         assertThat(loaded.get(0).getPort(), equalTo(8080));
+        assertThat(loaded.get(0).getAuthorizationType(), equalTo("None"));
+        assertThat(loaded.get(0).getCertificate(), equalTo("-----BEGIN CERTIFICATE-----\nTEST\n-----END CERTIFICATE-----"));
+        assertThat(loaded.get(0).getOauthClientId(), equalTo("client-123"));
     }
 }
